@@ -45,7 +45,10 @@ class RiskEngine:
         action = request.action.lower()
         target = request.target.lower()
 
-        # Destructive operations
+        # ---------------------------------------------------------
+        # 1. Destructive operations
+        # ---------------------------------------------------------
+
         if any(
             keyword in action
             for keyword in {
@@ -60,21 +63,30 @@ class RiskEngine:
             )
             score += 10
 
-        # Production environment
+        # ---------------------------------------------------------
+        # 2. Production environment
+        # ---------------------------------------------------------
+
         if "production" in target:
             potential_impacts.append(
                 "A production system may be affected."
             )
             score += 10
 
-        # Database impact
+        # ---------------------------------------------------------
+        # 3. Database impact
+        # ---------------------------------------------------------
+
         if "database" in action or "database" in target:
             potential_impacts.append(
                 "Database state may be modified."
             )
             score += 5
 
-        # External side effects
+        # ---------------------------------------------------------
+        # 4. External side effects
+        # ---------------------------------------------------------
+
         if any(
             keyword in action
             for keyword in {
@@ -89,6 +101,55 @@ class RiskEngine:
                 "The action may create an external side effect."
             )
             score += 10
+
+        # ---------------------------------------------------------
+        # 5. Simulation warnings
+        # ---------------------------------------------------------
+
+        if request.warnings:
+            potential_impacts.append(
+                "Agent Twin reported simulation warnings."
+            )
+            score += 20
+
+        # ---------------------------------------------------------
+        # 6. Multiple affected resources
+        # ---------------------------------------------------------
+
+        unique_resources = set(request.affected_resources)
+
+        if len(unique_resources) >= 2:
+            potential_impacts.append(
+                "Multiple resources may be affected."
+            )
+            score += 20
+
+        # ---------------------------------------------------------
+        # 7. Explicit human-review operations
+        # ---------------------------------------------------------
+        #
+        # This is useful for testing the CAIROS human-in-the-loop
+        # path with a deterministic operation.
+        #
+        # Example:
+        #   action = "review_operation"
+        #
+        # It intentionally creates a medium-risk request without
+        # pretending that a low-risk status check is dangerous.
+        # ---------------------------------------------------------
+
+        if any(
+            keyword in action
+            for keyword in {
+                "review_operation",
+                "human_review",
+                "approval_required",
+            }
+        ):
+            potential_impacts.append(
+                "The operation requires explicit human review."
+            )
+            score = max(score, 60)
 
         score = min(score, 100)
 
@@ -119,7 +180,11 @@ class RiskEngine:
             recommendation=recommendation,
         )
 
-    def _calculate_severity(self, score: int) -> RiskSeverity:
+    def _calculate_severity(
+        self,
+        score: int,
+    ) -> RiskSeverity:
+
         if score >= 90:
             return RiskSeverity.CRITICAL
 
@@ -136,6 +201,7 @@ class RiskEngine:
         severity: RiskSeverity,
         affected_resources: List[str],
     ) -> str:
+
         resource_count = len(set(affected_resources))
 
         if severity == RiskSeverity.CRITICAL:
@@ -147,6 +213,7 @@ class RiskEngine:
         if severity == RiskSeverity.MEDIUM:
             if resource_count > 1:
                 return "multi-resource"
+
             return "single-resource"
 
         return "single-resource"
@@ -156,6 +223,7 @@ class RiskEngine:
         severity: RiskSeverity,
         requires_human_approval: bool,
     ) -> str:
+
         if severity == RiskSeverity.CRITICAL:
             return (
                 "BLOCK execution. Require explicit human review "
@@ -170,8 +238,7 @@ class RiskEngine:
 
         if severity == RiskSeverity.MEDIUM:
             return (
-                "Continue with additional simulation and "
-                "policy validation before execution."
+                "Require human review before execution."
             )
 
         return (

@@ -6,15 +6,27 @@ from pydantic import BaseModel, Field
 from app.database.black_box import BlackBoxEvent
 
 
+# ============================================================
+# CAUSAL STATUS
+# ============================================================
+
+
 class CausalStatus(str, Enum):
     NO_CHANGE = "no_change"
     SUSPICIOUS = "suspicious"
     ROOT_CAUSE_CANDIDATE = "root_cause_candidate"
 
 
+# ============================================================
+# REQUEST / RESPONSE MODELS
+# ============================================================
+
+
 class ReplayRequest(BaseModel):
     original_events: List[BlackBoxEvent]
-    alternative_decisions: Dict[str, str] = Field(default_factory=dict)
+    alternative_decisions: Dict[str, str] = Field(
+        default_factory=dict
+    )
 
 
 class ReplayFinding(BaseModel):
@@ -36,15 +48,21 @@ class ReplayResult(BaseModel):
     conclusion: str
 
 
+# ============================================================
+# CAUSAL REPLAY ENGINE
+# ============================================================
+
+
 class CausalReplayEngine:
     """
-    CAIROS AgentDNA Causal Replay Engine.
+    CAIROS Causal Replay Engine.
 
-    Reconstructs an agent execution trace and compares selected
-    decisions against alternative decisions.
+    Replays an existing Black Box trace and evaluates whether
+    changing a decision could have materially changed the
+    execution outcome.
 
-    This first version performs deterministic trace-level causal
-    analysis. Real model/tool re-execution can be connected later.
+    This is an analysis-only component.
+    Replay never executes real-world tools.
     """
 
     DECISION_EVENTS = {
@@ -55,11 +73,7 @@ class CausalReplayEngine:
         "execution",
     }
 
-    def replay(
-        self,
-        request: ReplayRequest,
-    ) -> ReplayResult:
-
+    def replay(self, request: ReplayRequest) -> ReplayResult:
         events = sorted(
             request.original_events,
             key=lambda event: event.timestamp,
@@ -73,7 +87,7 @@ class CausalReplayEngine:
                 first_suspicious_event=None,
                 causal_status=CausalStatus.NO_CHANGE,
                 findings=[],
-                conclusion="No execution trace was available for replay.",
+                conclusion="No events were available for replay.",
             )
 
         agent_id = events[0].agent_id
@@ -83,14 +97,20 @@ class CausalReplayEngine:
         overall_status = CausalStatus.NO_CHANGE
 
         for event in events:
+
             alternative = request.alternative_decisions.get(
                 event.event_id
             )
 
+            # No alternative decision supplied for this event.
             if alternative is None:
                 continue
 
             original = event.decision
+
+            # ------------------------------------------------
+            # NO CHANGE
+            # ------------------------------------------------
 
             if original == alternative:
                 findings.append(
@@ -102,15 +122,20 @@ class CausalReplayEngine:
                         status=CausalStatus.NO_CHANGE,
                         explanation=(
                             "The alternative decision is identical "
-                            "to the original decision."
+                            "to the original decision, so no causal "
+                            "change was detected."
                         ),
                     )
                 )
                 continue
 
+            # ------------------------------------------------
+            # CLASSIFY CHANGE
+            # ------------------------------------------------
+
             status = self._classify_change(
                 event=event,
-                alternative_decision=alternative,
+                alternative=alternative,
             )
 
             findings.append(
@@ -122,11 +147,15 @@ class CausalReplayEngine:
                     status=status,
                     explanation=self._explain_change(
                         event=event,
-                        alternative_decision=alternative,
-                        status=status,
+                        original=original,
+                        alternative=alternative,
                     ),
                 )
             )
+
+            # ------------------------------------------------
+            # UPDATE OVERALL CAUSAL STATUS
+            # ------------------------------------------------
 
             if (
                 status == CausalStatus.ROOT_CAUSE_CANDIDATE
@@ -156,52 +185,102 @@ class CausalReplayEngine:
             conclusion=conclusion,
         )
 
+    # ========================================================
+    # CHANGE CLASSIFICATION
+    # ========================================================
+
     def _classify_change(
         self,
         event: BlackBoxEvent,
-        alternative_decision: str,
+        alternative: str,
     ) -> CausalStatus:
 
-        original = (event.decision or "").lower()
-        alternative = alternative_decision.lower()
+        original = event.decision
 
+        # Final decision changes from allow <-> block.
+        # This is the strongest causal signal.
         if event.event_type.value == "decision":
-            if original == "block" and alternative == "allow":
+            if {
+                original,
+                alternative,
+            } == {"allow", "block"}:
                 return CausalStatus.ROOT_CAUSE_CANDIDATE
 
-            if original == "allow" and alternative == "block":
-                return CausalStatus.ROOT_CAUSE_CANDIDATE
-
+        # Permission, simulation, or risk changes can affect
+        # later decisions, so mark them as suspicious.
         if event.event_type.value in {
             "permission",
             "simulation",
             "risk",
         }:
-            if original != alternative:
-                return CausalStatus.SUSPICIOUS
+            return CausalStatus.SUSPICIOUS
+
+        # Execution changes are also suspicious because they
+        # represent the final real-world execution boundary.
+        if event.event_type.value == "execution":
+            return CausalStatus.SUSPICIOUS
 
         return CausalStatus.SUSPICIOUS
+
+    # ========================================================
+    # EXPLANATION
+    # ========================================================
 
     def _explain_change(
         self,
         event: BlackBoxEvent,
-        alternative_decision: str,
-        status: CausalStatus,
+        original: Optional[str],
+        alternative: str,
     ) -> str:
 
-        if status == CausalStatus.ROOT_CAUSE_CANDIDATE:
+        event_type = event.event_type.value
+
+        # Avoid awkward text such as:
+        # "Changing the decision decision..."
+        if event_type == "decision":
             return (
-                f"Changing the {event.event_type.value} decision "
-                f"from '{event.decision}' to "
-                f"'{alternative_decision}' changes a critical "
-                "control point in the execution trace."
+                f"Changing the final decision from "
+                f"'{original}' to '{alternative}' changes a "
+                f"critical control point in the execution trace."
+            )
+
+        if event_type == "permission":
+            return (
+                f"Changing the permission outcome from "
+                f"'{original}' to '{alternative}' may change "
+                f"whether the requested action is authorized."
+            )
+
+        if event_type == "simulation":
+            return (
+                f"Changing the simulation outcome from "
+                f"'{original}' to '{alternative}' may change "
+                f"the safety assessment before execution."
+            )
+
+        if event_type == "risk":
+            return (
+                f"Changing the risk outcome from "
+                f"'{original}' to '{alternative}' may change "
+                f"the final authorization path."
+            )
+
+        if event_type == "execution":
+            return (
+                f"Changing the execution outcome from "
+                f"'{original}' to '{alternative}' changes the "
+                f"observed execution result."
             )
 
         return (
-            f"The {event.event_type.value} decision changes from "
-            f"'{event.decision}' to '{alternative_decision}', "
-            "making this event a suspicious point for further replay."
+            f"Changing the {event_type} outcome from "
+            f"'{original}' to '{alternative}' may affect "
+            f"the execution trace."
         )
+
+    # ========================================================
+    # CONCLUSION
+    # ========================================================
 
     def _build_conclusion(
         self,
@@ -216,16 +295,27 @@ class CausalReplayEngine:
             )
 
         if status == CausalStatus.SUSPICIOUS:
+            if first_suspicious_event:
+                return (
+                    "Replay identified a suspicious change at "
+                    f"event '{first_suspicious_event}', but the "
+                    "change was not classified as a root-cause "
+                    "candidate."
+                )
+
             return (
-                "Replay identified a suspicious decision, but "
-                "the available trace is insufficient to establish "
-                "a root-cause candidate."
+                "Replay identified suspicious decision changes "
+                "but could not establish a root-cause candidate."
             )
 
         return (
-            "Replay found no decision change that materially "
-            "altered the recorded execution trace."
+            "Replay found no meaningful causal change in the "
+            "provided alternative decisions."
         )
 
+
+# ============================================================
+# GLOBAL REPLAY ENGINE
+# ============================================================
 
 causal_replay = CausalReplayEngine()
