@@ -1,0 +1,358 @@
+:root {
+  --cairos-world: #e4e8e1;
+  --cairos-world-soft: #eef1ec;
+  --cairos-surface: #f4f6f1;
+
+  --cairos-ink: #121510;
+  --cairos-ink-soft: #596158;
+  --cairos-ink-faint: rgba(18, 21, 16, 0.34);
+
+  --cairos-metal: #2c312a;
+  --cairos-metal-soft: #737b70;
+
+  --cairos-lime: #9fc83b;
+  --cairos-lime-deep: #779d21;
+
+  --cairos-purple: #7659d8;
+  --cairos-gold: #c5a349;
+  --cairos-red: #be514d;
+
+  --cairos-line: rgba(18, 21, 16, 0.09);
+}
+
+html,
+body {
+  background: var(--cairos-world);
+  color: var(--cairos-ink);
+}
+
+::selection {
+  background: rgba(159, 200, 59, 0.32);
+  color: var(--cairos-ink);
+}
+
+/* ======================================================
+   GLOBAL WORLD
+====================================================== */
+
+.cairos-editorial-shell {
+  min-height: 100vh;
+
+  background:
+    radial-gradient(
+      circle at 80% 12%,
+      rgba(159, 200, 59, 0.08),
+      transparent 32%
+    ),
+    radial-gradient(
+      circle at 8% 60%,
+      rgba(118, 89, 216, 0.035),
+      transparent 28%
+    ),
+    linear-gradient(
+      180deg,
+      #e8ebe5 0%,
+      #e2e6df 52%,
+      #e7eae4 100%
+    );
+
+  color: var(--cairos-ink);
+}
+
+/* ======================================================
+   SUBTLE ENGINEERING GRID
+====================================================== */
+
+.editorial-grid {
+  background-image:
+    linear-gradient(
+      rgba(18, 21, 16, 0.025) 1px,
+      transparent 1px
+    ),
+    linear-gradient(
+      90deg,
+      rgba(18, 21, 16, 0.025) 1px,
+      transparent 1px
+    );
+
+  background-size: 64px 64px;
+}
+
+.editorial-noise {
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 180 180' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='.5'/%3E%3C/svg%3E");
+}
+
+/* ======================================================
+   TYPOGRAPHY
+====================================================== */
+
+.editorial-eyebrow {
+  color: rgba(18, 21, 16, 0.42);
+
+  font-size: 9px;
+  font-weight: 900;
+  line-height: 1;
+
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+
+.editorial-heading {
+  color: var(--cairos-ink) !important;
+}
+
+.editorial-copy {
+  color: rgba(18, 21, 16, 0.58);
+}
+
+.editorial-hero-title {
+  color: #121510 !important;
+
+  -webkit-text-fill-color: #121510 !important;
+
+  text-shadow: none !important;
+
+  mix-blend-mode: normal !important;
+}
+
+.editorial-hero-title .editorial-hero-accent {
+  color: #88b12a !important;
+
+  -webkit-text-fill-color: #88b12a !important;
+
+  text-shadow: none !important;
+}
+
+.editorial-hero-copy {
+  color: rgba(18, 21, 16, 0.59) !important;
+}
+
+/* ======================================================
+   HERO
+====================================================== */
+
+.editorial-hero {
+  border: 1px solid rgba(18, 21, 16, 0.095);
+
+  background:
+    radial-gradient(
+      circle at 73% 45%,
+      rgba(159, 200, 59, 0.06),
+      transparent 27%
+    ),
+    linear-gradient(
+      110deg,
+      rgba(242, 245, 239, 0.94) 0%,
+      rgba(234, 238, 231, 0.9) 49%,
+      rgba(224, 229, 220, 0.76) 100%
+    );
+
+  box-shadow:
+    0 34px 90px rgba(38, 43, 34, 0.07),
+    inset 0 1px 0 rgba(255, 255, 255, 0.75);
+}
+
+/* ======================================================
+   LIGHT SURFACES
+====================================================== */
+
+.editorial-section {
+  position: relative;
+
+  border: 1px solid rgba(18, 21, 16, 0.09);
+  border-radius: 34px;
+
+  background: rgba(241, 244, 238, 0.78);
+
+  box-shadow:
+    0 30px 80px rgba(39, 44, 35, 0.06),
+    inset 0 1px 0 rgba(255, 255, 255, 0.74);
+
+  backdrop-filter: blur(20px);
+}
+
+.editorial-card {
+  border: 1px solid rgba(18, 21, 16, 0.09);
+
+  background: rgba(245, 247, 242, 0.72);
+
+  box-shadow:
+    0 22px 55px rgba(39, 44, 35, 0.055),
+    inset 0 1px 0 rgba(255, 255, 255, 0.78);
+}
+
+/* ======================================================
+   DARK CINEMATIC SECTION
+====================================================== */
+
+.editorial-dark {
+  background:
+    radial-gradient(
+      circle at 72% 40%,
+      rgba(159, 200, 59, 0.075),
+      transparent 35%
+    ),
+    #1b2019;
+
+  color: white;
+}
+
+/* ======================================================
+   CHIPS
+====================================================== */
+
+.editorial-chip {
+  display: inline-flex;
+
+  min-height: 36px;
+
+  align-items: center;
+
+  gap: 8px;
+
+  padding: 0 13px;
+
+  border: 1px solid rgba(18, 21, 16, 0.1);
+  border-radius: 999px;
+
+  background: rgba(242, 245, 239, 0.65);
+
+  color: rgba(18, 21, 16, 0.64);
+
+  backdrop-filter: blur(18px);
+}
+
+/* ======================================================
+   BUTTONS
+====================================================== */
+
+.editorial-primary {
+  display: inline-flex;
+
+  min-height: 54px;
+
+  align-items: center;
+  justify-content: center;
+
+  gap: 10px;
+
+  padding: 0 23px;
+
+  border: 1px solid #171a15;
+  border-radius: 999px;
+
+  background: #171a15;
+
+  color: white !important;
+
+  font-size: 10px;
+  font-weight: 900;
+
+  letter-spacing: 0.09em;
+
+  box-shadow:
+    0 15px 35px rgba(18, 21, 16, 0.15);
+
+  transition:
+    transform 180ms ease,
+    box-shadow 180ms ease,
+    background 180ms ease;
+}
+
+.editorial-primary:hover {
+  transform: translateY(-2px);
+
+  background: #252b22;
+
+  box-shadow:
+    0 21px 46px rgba(18, 21, 16, 0.18);
+}
+
+.editorial-secondary {
+  display: inline-flex;
+
+  min-height: 54px;
+
+  align-items: center;
+  justify-content: center;
+
+  gap: 10px;
+
+  padding: 0 23px;
+
+  border: 1px solid rgba(18, 21, 16, 0.12);
+  border-radius: 999px;
+
+  background: rgba(244, 246, 241, 0.58);
+
+  color: rgba(18, 21, 16, 0.8) !important;
+
+  font-size: 10px;
+  font-weight: 900;
+
+  letter-spacing: 0.09em;
+
+  backdrop-filter: blur(18px);
+
+  transition:
+    transform 180ms ease,
+    background 180ms ease;
+}
+
+.editorial-secondary:hover {
+  transform: translateY(-2px);
+
+  background: rgba(249, 250, 247, 0.86);
+}
+
+/* ======================================================
+   INPUTS
+====================================================== */
+
+.editorial-input {
+  color: var(--cairos-ink) !important;
+
+  caret-color: var(--cairos-ink);
+}
+
+.editorial-input::placeholder {
+  color: rgba(18, 21, 16, 0.3);
+}
+
+.editorial-input:focus {
+  outline: none;
+}
+
+/* ======================================================
+   EXISTING COMPONENT OVERRIDES
+====================================================== */
+
+.cairos-editorial-shell .section-label {
+  color: rgba(18, 21, 16, 0.4) !important;
+}
+
+.cairos-editorial-shell .section-title {
+  color: #121510 !important;
+}
+
+/* ======================================================
+   SCROLLBAR
+====================================================== */
+
+body::-webkit-scrollbar {
+  width: 8px;
+}
+
+body::-webkit-scrollbar-track {
+  background: #dfe3dc;
+}
+
+body::-webkit-scrollbar-thumb {
+  border-radius: 999px;
+
+  background: rgba(18, 21, 16, 0.2);
+}
+
+body::-webkit-scrollbar-thumb:hover {
+  background: rgba(18, 21, 16, 0.34);
+}
