@@ -216,3 +216,7 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+# CAIROS frontend runtime helpers
+!frontend/cairos-frontend/lib/
+!frontend/cairos-frontend/lib/**
